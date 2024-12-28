@@ -1,0 +1,74 @@
+﻿@page "/"
+@inject IJSRuntime JsRuntime;
+
+
+<div class="dd-container">
+    <DragDropList T="TestNode" @bind-DataList="@dataList" Group="a" />
+    <DragDropList T="TestNode" @bind-DataList="@dataList" Group="b"/>
+</div>
+
+@code {
+    private static Func<string, string, string, Task> _onChange;
+
+    public class TestNode
+    {
+        public string Data { get; set; }
+        public override string ToString()
+        {
+            return Data;
+        }
+    }
+
+    private List<DragDropList.Node<TestNode>> dataList = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                dataList.Add(new()
+                {
+                    GroupAffiliation = new Random().Next(2) == 0 ? "a" : "b",
+                    Value = new TestNode() {Data = i.ToString()}
+                });
+            }
+            StateHasChanged();
+            await JsRuntime.InvokeAsync<object>("makeDraggable");
+        }
+    }
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        _onChange = OnChangeAsync;
+    }
+    private async Task OnChangeAsync(string nodeId, string targetGroup, string beforeNode)
+    {
+        var node = dataList.FirstOrDefault(e => e.GetId().Equals(nodeId));
+        if (node != null)
+        {
+            node.GroupAffiliation = targetGroup;
+            if (!string.IsNullOrEmpty(beforeNode) && beforeNode != nodeId)
+            {
+                dataList.Remove(node);
+                var beforeNodeIndex = dataList.FindIndex(e => e.GetId().Equals(beforeNode));
+                dataList.Insert(beforeNodeIndex, node);
+            }
+        }
+        
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public static async Task OnDropNode(string nodeId, string targetGroup, string beforeNode)
+    {
+        await _onChange?.Invoke(nodeId, targetGroup, beforeNode);
+    }
+
+    [JSInvokable]
+    public static void ReportMe(string message)
+    {
+        Console.WriteLine(message);
+    }
+
+}

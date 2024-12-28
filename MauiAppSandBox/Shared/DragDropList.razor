@@ -1,0 +1,39 @@
+﻿@using System.Reflection.Metadata
+@using static MauiAppSandBox.Shared.DragDropList;
+<style>
+    .dd-item {
+        background-color: gray;
+        border: 2px solid black;
+        border-radius: 2px;
+        padding: 10px;
+        margin: 5px;
+    }
+
+    .dd-box {
+        border: 2px solid black;
+        border-radius: 10px;
+        padding: 10px;
+        margin: 10px;
+    }
+
+    .dd-hover {
+        border: 2px dashed greenyellow;
+    }
+
+</style>
+<div class="dd-box" data-id="@Group">
+    @foreach (var item in DataList)
+    {
+        <div style="@(item.GroupAffiliation.Equals(Group) ? "" : "display: none;")" data-id="@(item.GetId())" class="dd-item">@item.Value.ToString()</div>
+    }
+</div>
+@typeparam T
+@code {
+    
+    [Parameter]
+    public string Group { get; set; } = string.Empty;
+    [Parameter]
+    public List<Node<T>> DataList { get; set; } = new();
+    [Parameter]
+    public EventCallback<List<Node<T>>> DataListChanged { get; set; }
+}
